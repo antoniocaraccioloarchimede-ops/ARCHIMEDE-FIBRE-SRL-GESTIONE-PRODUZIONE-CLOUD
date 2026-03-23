@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archimede Fibre SRL - Cloud Produzione v40.1</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+
+<style>
+:root {
+  --bg-body: #f1f5f9; --accent: #2563eb; --purple: #7e22ce; --green: #15803d;
+  --orange: #f59e0b; --red: #dc2626; --dark: #0f172a; --border: #cbd5e1;
+  --urgent-red: #ef4444; --note-bg: #fff7ed; --gold: #fbbf24;
+  --success-bg: #dcfce7; 
+}
+body { font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--dark); margin: 0; line-height: 1.5; }
+
+.header { background: var(--dark); padding: 1.2rem 2.5rem; color: white; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--accent); }
+.logo-container { display: flex; align-items: center; gap: 15px; }
+.logo-box { background: white; color: var(--dark); padding: 8px 15px; border-radius: 8px; font-weight: 900; font-size: 1.5rem; border: 2px solid var(--gold); }
+.header-title { font-size: 1.2rem; font-weight: 800; letter-spacing: 0.5px; }
+.header-subtitle { color: var(--gold); font-weight: 700; font-size: 0.95rem; text-transform: uppercase; display: block; margin-top: 2px; letter-spacing: 1px; }
+
+.dashboard-nav { display: flex; gap: 12px; padding: 15px 2rem; background: white; border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 100; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+.tab-btn { position: relative; padding: 12px 24px; border-radius: 10px; border: 2px solid var(--border); background: white; cursor: pointer; font-weight: 800; font-size: 13px; transition: 0.2s; white-space: nowrap; }
+
+.pulse-purple { 
+    animation: pulse-purple-btn 1.5s infinite !important;
+    border-color: var(--purple) !important;
+    color: var(--purple) !important;
+}
+@keyframes pulse-purple-btn {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(126, 34, 206, 0.7); }
+    70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(126, 34, 206, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(126, 34, 206, 0); }
+}
+
+.search-container { 
+    display: flex; 
+    padding: 15px; 
+    background: #f8fafc; 
+    border-bottom: 2px solid var(--border); 
+    align-items: center; 
+    gap: 10px; 
+}
+.search-input { 
+    flex: 1; 
+    padding: 10px; 
+    border: 2px solid var(--accent); 
+    border-radius: 8px; 
+    font-weight: 700; 
+    font-size: 14px;
+}
+
+.tab-btn.active[data-f="dafare"] { background: var(--accent); color: white; border-color: var(--accent); }
+.tab-btn.active[data-f="incorso"] { background: var(--purple); color: white; border-color: var(--purple); }
+.tab-btn.active[data-f="parziali"] { background: var(--red); color: white; border-color: var(--red); }
+.tab-btn.active[data-f="completi"] { background: var(--green); color: white; border-color: var(--green); }
+.tab-btn.active[data-f="esolver"] { background: var(--orange); color: white; border-color: var(--orange); }
+
+.notification-badge { position: absolute; top: -8px; right: -5px; background: var(--red); color: white; border-radius: 50%; padding: 2px 7px; font-size: 10px; font-weight: 900; border: 2px solid white; }
+
+.container { padding: 25px; display: grid; grid-template-columns: 340px 1fr; gap: 25px; max-width: 1700px; margin: 0 auto; }
+.card { background: white; border-radius: 14px; padding: 20px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center; }
+.form-input { width: 100%; padding: 10px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; margin-bottom: 10px; box-sizing: border-box; text-align: center; font-weight: 600; }
+
+table { width: 100%; border-collapse: separate; border-spacing: 0; background: white; table-layout: fixed; }
+th { text-align: center; padding: 15px; color: #475569; font-size: 11px; text-transform: uppercase; background: #f8fafc; border-bottom: 2px solid var(--border); font-weight: 800; }
+td { padding: 18px 15px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; text-align: center; }
+
+.row-today { animation: glow-urgent 1.5s infinite; border-left: 8px solid var(--urgent-red) !important; }
+@keyframes glow-urgent { 0%, 100% { background-color: #fff; } 50% { background-color: #fee2e2; } }
+
+.badge-stato { padding: 6px 12px; border-radius: 6px; font-size: 10px; font-weight: 800; color: white; text-transform: uppercase; display: inline-block; }
+.bg-dafare { background: var(--accent); }
+.bg-incorso { background: var(--purple); }
+.bg-completo { background: var(--green); }
+.bg-parziale { background: var(--red); }
+.bg-caricato { background: var(--green); }
+
+.details-row { display: none; background: #f8fafc; }
+.phase-box { background: white; border: 1px solid var(--border); border-radius: 10px; margin: 15px; padding: 15px; text-align: left; }
+.phase-item { display: grid; grid-template-columns: 0.8fr 1.2fr 1.2fr 1fr 1fr 2fr; gap: 10px; padding: 12px; border-bottom: 1px solid #f1f5f9; align-items: center; font-size: 11px; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 18px; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; }
+.btn-manage { background: var(--dark); color: white; font-size: 11px; width: 100px; }
+.btn-detail { background: #f1f5f9; border: 1px solid var(--border); padding: 6px 14px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 700; margin-top: 8px; }
+.btn-del-row { color: var(--red); background: #fef2f2; border: 1px solid #fee2e2; padding: 10px; border-radius: 8px; cursor: pointer; }
+
+.security-box { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.btn-backup { background: #f8fafc; border: 2px solid #cbd5e1; color: #334155; padding: 10px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; box-sizing: border-box; }
+
+.modal-bg { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(5px); z-index: 1000; justify-content:center; align-items:center; }
+.modal-box { background: white; border-radius: 20px; padding: 35px; width: 100%; max-width: 480px; text-align: center; }
+.required-note { border: 2px solid var(--red) !important; background: #fff1f2; }
+</style>
+</head>
+<body>
+
+<header class="header">
+    <div class="logo-container">
+        <div class="logo-box">AF</div>
+        <div>
+            <div class="header-title">ARCHIMEDE FIBRE SRL</div>
+            <div class="header-subtitle">GESTIONE PRODUZIONE CLOUD</div>
+        </div>
+    </div>
+    <div id="cloud-status" style="font-size: 10px; background: #ef4444; color: white; padding: 8px 18px; border-radius: 20px; font-weight: 900;">
+        <i class="fas fa-sync"></i> CONNETTENDO...
+    </div>
+</header>
+
+<nav class="dashboard-nav">
+    <button class="tab-btn active" data-f="dafare" onclick="setFilter('dafare')">🔵 DA FARE</button>
+    <button id="btn-nav-incorso" class="tab-btn" data-f="incorso" onclick="setFilter('incorso')">🟣 IN CORSO</button>
+    <button class="tab-btn" data-f="parziali" onclick="setFilter('parziali')">🔴 PARZIALI</button>
+    <button class="tab-btn" data-f="completi" onclick="setFilter('completi')">🟢 CONCLUSI</button>
+    <button class="tab-btn" data-f="esolver" onclick="setFilter('esolver')">
+        <i class="fas fa-database"></i> ESOLVER <span id="badge-esolver" class="notification-badge" style="display:none;">0</span>
+    </button>
+</nav>
+
+<div class="container">
+    <aside>
+        <div class="card" style="border-top: 4px solid var(--green);">
+            <h3 style="margin:0; font-size:12px; text-transform: uppercase;">Sicurezza Dati</h3>
+            <div class="security-box">
+                <button class="btn-backup" onclick="exportExcelDetailed()"><i class="fas fa-file-excel" style="color:green"></i> EXCEL DETTAGLIATO</button>
+                <button class="btn-backup" onclick="exportJSONManual()"><i class="fas fa-download"></i> BACKUP JSON</button>
+                <label class="btn-backup" style="cursor:pointer">
+                    <i class="fas fa-upload"></i> IMPORTA BACKUP
+                    <input type="file" id="importFile" hidden onchange="importJSONManual(event)">
+                </label>
+            </div>
+        </div>
+
+        <div class="card">
+            <button class="btn" style="background:var(--green); color:white; width:100%; padding: 15px;" onclick="openModal('modal-ana')">
+                <i class="fas fa-boxes"></i> ARCHIVIO PRODOTTI
+            </button>
+        </div>
+        <div class="card" style="border-top: 4px solid var(--accent);">
+            <h3 style="margin-top:0; font-size: 14px; text-transform: uppercase;">Nuovo Ordine</h3>
+            <label style="font-size:10px; font-weight:800; color: #64748b; display: block; margin-bottom: 5px;">ARTICOLO</label>
+            <select id="f_prod" class="form-input"></select>
+            <label style="font-size:10px; font-weight:800; color: #64748b; display: block; margin-bottom: 5px;">LAVORAZIONE</label>
+            <select id="f_tipo" class="form-input">
+                <option value="Liquido → Finito">Liquido → Prodotto Finito</option>
+                <option value="Solo Etichettatura">Solo Etichettatura</option>
+            </select>
+            <label style="font-size:10px; font-weight:800; color: #64748b; display: block; margin-bottom: 5px;">QUANTITÀ</label>
+            <input type="number" id="f_qty" class="form-input">
+            <label style="font-size:10px; font-weight:800; color:var(--red); display: block; margin-bottom: 5px;">DATA ALLERT</label>
+            <input type="date" id="f_data" class="form-input" style="border-color:var(--red);">
+            <button class="btn" style="background:var(--accent); color:white; width:100%; padding: 12px;" onclick="aggiungiOrdine()">PIANIFICA ORDINE</button>
+        </div>
+    </aside>
+
+    <main>
+        <div class="card" style="padding:0; overflow:hidden;">
+            <div id="search-bar-completi" class="search-container">
+                <i class="fas fa-search" style="color:var(--accent)"></i>
+                <input type="text" id="input-ricerca" class="search-input" placeholder="Cerca articolo in questa categoria..." onkeyup="filtraCompleti()">
+            </div>
+            <table>
+                <thead><tr id="table-head"></tr></thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<div id="modal-gestione" class="modal-bg">
+    <div class="modal-box">
+        <h2 id="m-titolo" style="margin-bottom:0;">---</h2>
+        <div id="status-info" style="font-weight:800; color:var(--accent); margin: 20px 0; font-size: 1.3rem;"></div>
+        <input type="text" id="m_operatore" class="form-input" placeholder="Nome Operatore">
+        <button id="btn-inizio" class="btn" style="background:var(--purple); color:white; width:100%; padding: 15px;" onclick="avvia()">AVVIA PRODUZIONE</button>
+        <button id="btn-fine" class="btn" style="background:var(--green); color:white; width:100%; padding: 15px;" onclick="apriVersamento()">VERSA QUANTITÀ</button>
+        <button class="btn" style="background:#f1f5f9; width:100%; margin-top:15px;" onclick="closeModal('modal-gestione')">CHIUDI</button>
+    </div>
+</div>
+
+<div id="modal-v" class="modal-bg">
+    <div class="modal-box">
+        <h3 style="margin-top:0;">Versamento Sessione</h3>
+        <p style="font-size:11px; font-weight:800; color:var(--green); margin-bottom:5px;">QUANTI PEZZI HAI FATTO?</p>
+        <input type="number" id="v_qty" class="form-input" style="font-size:32px; border-color:var(--green);">
+        <p style="font-size:11px; font-weight:800; color:var(--red); margin-bottom:5px;">NOTA OBBLIGATORIA PER UFFICIO:</p>
+        <textarea id="v_note" class="form-input" style="height:130px; resize:none; text-align: left;" placeholder="Scrivi qui i dettagli obbligatori..."></textarea>
+        <button class="btn" style="background:var(--green); color:white; width:100%; padding:15px;" onclick="salvaVersamento()">CONFERMA E INVIA A ESOLVER</button>
+        <button class="btn" style="background:#f1f5f9; width:100%; margin-top:10px;" onclick="closeModal('modal-v')">ANNULLA</button>
+    </div>
+</div>
+
+<div id="modal-ana" class="modal-bg">
+    <div class="modal-box">
+        <h3>Anagrafica Prodotti</h3>
+        <div id="lista-articoli-db" style="max-height: 250px; overflow-y: auto; margin-bottom: 20px; border:1px solid var(--border); border-radius:12px;"></div>
+        <div style="display: flex; gap: 8px;">
+            <input type="text" id="new_art_name" class="form-input" placeholder="Nuovo Articolo" style="margin:0;">
+            <button class="btn" style="background:var(--accent); color:white;" onclick="addArt()">AGGIUNGI</button>
+        </div>
+        <button class="btn" style="width:100%; margin-top:20px;" onclick="closeModal('modal-ana')">TORNA</button>
+    </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBPmAHAVaeD1W2tvRC2jEc6HLD_v6kUkvU",
+  authDomain: "archimede-fibre-srl-produzione.firebaseapp.com",
+  databaseURL: "https://archimede-fibre-srl-produzione-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "archimede-fibre-srl-produzione",
+  storageBucket: "archimede-fibre-srl-produzione.firebasestorage.app",
+  messagingSenderId: "533982815056",
+  appId: "1:533982815056:web:88c74378fe8aca59094255"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let articoli = [];
+let ordini = [];
+let filtro = 'dafare';
+let idSel = null;
+
+db.ref().on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+        articoli = data.articoli || [];
+        ordini = data.ordini || [];
+        document.getElementById("cloud-status").style.background = "#15803d";
+        document.getElementById("cloud-status").innerHTML = '<i class="fas fa-check"></i> CLOUD ATTIVO';
+    }
+    updateUI();
+});
+
+function pushData() { db.ref().set({ articoli, ordini }); }
+
+function exportJSONManual() {
+    const dataStr = JSON.stringify({ articoli, ordini }, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `backup_af_produzione_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+}
+
+function importJSONManual(event) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const imported = JSON.parse(e.target.result);
+            if(confirm("Attenzione: caricando questo file sovrascriverai tutti i dati correnti sul Cloud. Procedere?")) {
+                articoli = imported.articoli || [];
+                ordini = imported.ordini || [];
+                pushData();
+                alert("Dati importati e sincronizzati con successo!");
+            }
+        } catch(err) { alert("Errore: il file non è un backup valido."); }
+    };
+    reader.readAsText(event.target.files[0]);
+}
+
+function exportExcelDetailed() {
+    let csv = "\uFEFFDATA_ORDINE;ARTICOLO;TIPO;QUANTITA_ORDINATA;DATA_VERSAMENTO;INIZIO;FINE;OPERATORE;QTY_VERSATA;NOTA;ESOLVER\n";
+    ordini.forEach(o => {
+        if(o.versamenti && o.versamenti.length > 0) {
+            o.versamenti.forEach(v => {
+                csv += `${o.data};${o.art};${o.tipo};${o.qty};${v.timestamp};${v.inizio};${v.fine};${v.operatoreSessione};${v.qty};"${v.note}";${v.caricato ? 'SI' : 'NO'}\n`;
+            });
+        } else {
+            csv += `${o.data};${o.art};${o.tipo};${o.qty};---;---;---;---;0;---;---\n`;
+        }
+    });
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `report_produzione_dettagliato.csv`;
+    link.click();
+}
+
+function filtraCompleti() {
+    const input = document.getElementById('input-ricerca').value.toLowerCase();
+    const rows = document.querySelectorAll('.riga-ordine');
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(input) ? '' : 'none';
+        const detailRow = document.getElementById(`details-${row.getAttribute('data-id')}`);
+        if(detailRow && row.style.display === 'none') detailRow.style.display = 'none';
+    });
+}
+
+function updateUI() {
+    document.getElementById("f_prod").innerHTML = articoli.sort().map(a => `<option value="${a}">${a}</option>`).join('');
+    document.getElementById("lista-articoli-db").innerHTML = articoli.sort().map((a, i) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #eee;">
+            <span style="font-weight:600;">${a}</span>
+            <div style="display:flex; gap:8px;">
+                <button onclick="editArt('${a.replace(/'/g, "\\'")}')" style="color:var(--accent); background:none; border:none; cursor:pointer;"><i class="fas fa-pen"></i></button>
+                <button onclick="delArt('${a.replace(/'/g, "\\'")}')" style="color:var(--red); background:none; border:none; cursor:pointer;"><i class="fas fa-trash-alt"></i></button>
+            </div>
+        </div>`).join('');
+    
+    let pending = 0;
+    ordini.forEach(o => { if(o.versamenti) pending += o.versamenti.filter(v => !v.caricato).length; });
+    const b = document.getElementById("badge-esolver");
+    if(pending > 0){ b.innerText = pending; b.style.display="block"; } else { b.style.display="none"; }
+
+    const haInCorso = ordini.some(o => o.stato === 'incorso');
+    const btnInCorso = document.getElementById("btn-nav-incorso");
+    if(haInCorso && filtro !== 'incorso') {
+        btnInCorso.classList.add("pulse-purple");
+    } else {
+        btnInCorso.classList.remove("pulse-purple");
+    }
+
+    render();
+}
+
+function render() {
+    const tbody = document.getElementById("table-body");
+    const thead = document.getElementById("table-head");
+    tbody.innerHTML = "";
+    const oggi = new Date().toISOString().split('T')[0];
+
+    if(filtro === 'esolver') {
+        thead.innerHTML = `<th>Stato</th><th>Articolo</th><th>Quantità</th><th>Azioni</th>`;
+        renderEsolver(tbody);
+    } else {
+        thead.innerHTML = `<th>Status</th><th>Articolo</th><th>Pezzi</th><th>Orari</th><th>Azioni</th>`;
+        renderMain(tbody, oggi);
+    }
+}
+
+function renderMain(tbody, oggi) {
+    let lista = ordini.filter(o => {
+        if(o.stato === 'incorso') return filtro === 'incorso'; 
+        if(filtro === 'parziali') return o.fatti > 0 && o.fatti < o.qty;
+        if(filtro === 'completi') return o.fatti >= o.qty;
+        return o.stato === filtro;
+    });
+
+    lista.forEach((o) => {
+        const isToday = o.data === oggi && o.stato === 'dafare';
+        tbody.innerHTML += `
+        <tr class="riga-ordine ${isToday ? 'row-today' : ''}" data-id="${o.id}">
+            <td><span class="badge-stato ${o.stato==='incorso'?'bg-purple':o.fatti>=o.qty?'bg-completo':o.fatti>0?'bg-parziale':'bg-dafare'}">${o.stato.toUpperCase()}</span><br><b>${o.data}</b></td>
+            <td><strong>${o.art}</strong><br><button class="btn-detail" onclick="toggleDetails(${o.id})">STORICO FASI (${o.versamenti ? o.versamenti.length : 0})</button></td>
+            <td>
+                Quantità Ordinata: ${o.qty} 
+                ${o.stato === 'dafare' ? `<button onclick="editQty(${o.id})" style="border:none; background:none; color:var(--accent); cursor:pointer; font-size:10px;"><i class="fas fa-edit"></i></button>` : ''}
+                <br><b style="color:var(--green)">Quantità Prodotta: ${o.fatti}</b>
+            </td>
+            <td>In: ${o.oraInizioSessione || '--'}<br>Fin: ${(o.versamenti && o.versamenti.length > 0) ? o.versamenti[o.versamenti.length-1].fine : '--'}</td>
+            <td>
+                <div style="display:flex; justify-content:center; gap:8px;">
+                    <button class="btn btn-manage" onclick="apriGestione(${o.id})">GESTISCI</button>
+                    <button class="btn-del-row" onclick="azioneEliminaGenerale(${o.id})"><i class="fas fa-trash"></i></button>
+                </div>
+            </td>
+        </tr>
+        <tr id="details-${o.id}" class="details-row"><td colspan="5"><div class="phase-box">
+            <div class="phase-item" style="font-weight:800; border-bottom:2px solid #ddd; background:#eee;">
+                <span>FASE</span><span>DATA</span><span>ORARIO</span><span>OPERATORE</span><span>QTY</span><span>NOTA</span>
+            </div>
+            ${o.versamenti ? o.versamenti.map((v, i) => `
+                <div class="phase-item">
+                    <span><b>#${i+1}</b></span>
+                    <span>${v.timestamp}</span>
+                    <span>${v.inizio}-${v.fine}</span>
+                    <span style="color:var(--accent); font-weight:700;">${v.operatoreSessione}</span>
+                    <span style="color:var(--green); font-weight:800;">+${v.qty}</span>
+                    <span><i>"${v.note}"</i></span>
+                </div>`).join('') : 'Nessun versamento'}
+        </div></td></tr>`;
+    });
+}
+
+function renderEsolver(tbody) {
+    ordini.forEach(o => {
+        if(o.versamenti) {
+            o.versamenti.forEach((v, idx) => {
+                const vId = `es-${o.id}-${idx}`;
+                tbody.innerHTML += `
+                <tr style="background:${v.caricato ? 'var(--success-bg)' : '#fffbeb'}">
+                    <td>
+                        <span class="badge-stato ${v.caricato ? 'bg-caricato' : 'bg-dafare'}">
+                            ${v.caricato ? 'CARICATO SU ESOLVER' : 'DA CARICARE'}
+                        </span>
+                    </td>
+                    <td><strong>${o.art}</strong><br><button class="btn-detail" onclick="toggleDetails('${vId}')"><i class="fas fa-comment-dots"></i> LEGGI NOTA</button></td>
+                    <td><b>${v.qty}</b></td>
+                    <td>
+                        <div style="display:flex; justify-content:center; gap:10px;">
+                            ${!v.caricato ? `<button class="btn" style="background:var(--green); color:white; font-size:11px;" onclick="caricaEs(${o.id},${idx})">CARICA</button>` : '<i class="fas fa-check-circle" style="color:var(--green); font-size:20px;"></i>'}
+                            <button class="btn-del-row" onclick="eliminaSingoloVersamento(${o.id}, ${idx})"><i class="fas fa-times"></i></button>
+                        </div>
+                    </td>
+                </tr>
+                <tr id="details-${vId}" class="details-row"><td colspan="4"><div class="phase-box" style="border-left:5px solid var(--orange); background:var(--note-bg);">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <span style="font-weight:800; color:var(--dark);">OPERATORE: ${v.operatoreSessione}</span>
+                        <span style="font-size:10px; color:#666;">Data: ${v.timestamp} ore ${v.fine}</span>
+                    </div>
+                    <div style="font-size:13px; font-weight:600; color:var(--dark); line-height:1.4;">NOTA: "${v.note}"</div>
+                </div></td></tr>`;
+            });
+        }
+    });
+}
+
+function editQty(id) {
+    const o = ordini.find(x => x.id === id);
+    const n = prompt("Inserisci la nuova Quantità Ordinata:", o.qty);
+    if(n !== null && !isNaN(n) && n > 0) {
+        o.qty = parseInt(n);
+        pushData();
+    } else if (n !== null) {
+        alert("Inserire un numero valido superiore a zero.");
+    }
+}
+
+/* --- LOGICA ELIMINAZIONE AGGIORNATA --- */
+
+function azioneEliminaGenerale(id) {
+    const o = ordini.find(x => x.id === id);
+    
+    // CASO 1: SE L'ORDINE È NEI "DA FARE", LO ELIMINO DEFINITIVAMENTE
+    if (o.stato === 'dafare') {
+        if(confirm("L'ordine non è ancora iniziato. Vuoi ELIMINARLO DEFINITIVAMENTE dal sistema?")) {
+            ordini = ordini.filter(x => x.id !== id);
+            pushData();
+        }
+    } 
+    // CASO 2: SE L'ORDINE È GIÀ INIZIATO (PARZIALE O CONCLUSO), LO RESETTO
+    else {
+        if(confirm("Attenzione: l'ordine verrà azzerato e riportato in stato 'DA FARE'. Procedere?")) { 
+            o.fatti = 0;
+            o.stato = 'dafare';
+            o.versamenti = [];
+            o.operatore = '';
+            o.oraInizioSessione = '';
+            pushData(); 
+        } 
+    }
+}
+
+function eliminaSingoloVersamento(ordineId, versamentoIdx) {
+    if(confirm("Eliminare questa riga di carico da Esolver? L'ordine originale NON verrà modificato.")) {
+        const o = ordini.find(x => x.id === ordineId);
+        o.versamenti.splice(versamentoIdx, 1);
+        pushData();
+    }
+}
+
+function caricaEs(id, idx) { ordini.find(x => x.id === id).versamenti[idx].caricato = true; pushData(); }
+function aggiungiOrdine() {
+    const q = parseInt(document.getElementById("f_qty").value);
+    const d = document.getElementById("f_data").value;
+    if(!q || !d) return alert("Mancano dati!");
+    ordini.push({ id: Date.now(), art: document.getElementById("f_prod").value, tipo: document.getElementById("f_tipo").value, qty: q, fatti: 0, data: d, stato: 'dafare', operatore: '', versamenti: [] });
+    pushData();
+}
+function editArt(oldV) {
+    const n = prompt("Modifica:", oldV);
+    if(n) { 
+        const i = articoli.indexOf(oldV); articoli[i] = n.trim(); 
+        ordini.forEach(o => { if(o.art === oldV) o.art = n.trim(); }); 
+        pushData(); 
+    }
+}
+function delArt(val) { if(confirm("Elimina prodotto?")) { articoli = articoli.filter(a => a !== val); pushData(); } }
+function addArt() { const n = document.getElementById("new_art_name").value; if(n){ articoli.push(n); pushData(); document.getElementById("new_art_name").value=""; } }
+
+function apriGestione(id) { 
+    idSel = id; const o = ordini.find(x => x.id === id); 
+    document.getElementById("m-titolo").innerText = o.art; 
+    document.getElementById("status-info").innerText = `${o.fatti} / ${o.qty} QUANTITÀ PRODOTTA`; 
+    const btnInizio = document.getElementById("btn-inizio");
+    btnInizio.innerText = o.fatti > 0 ? "RIPRENDI PRODUZIONE" : "AVVIA PRODUZIONE";
+    btnInizio.style.display = o.stato !== 'incorso' ? 'block' : 'none'; 
+    document.getElementById("btn-fine").style.display = o.stato === 'incorso' ? 'block' : 'none'; 
+    openModal('modal-gestione'); 
+}
+
+function avvia() { 
+    const o = ordini.find(x => x.id === idSel); const op = document.getElementById("m_operatore").value; 
+    if(!op) return alert("Inserire nome operatore!"); o.operatore = op; o.stato = 'incorso'; 
+    o.oraInizioSessione = new Date().toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'}); 
+    pushData(); closeModal('modal-gestione'); 
+}
+function apriVersamento() { 
+    document.getElementById("v_qty").value = "";
+    document.getElementById("v_note").value = "";
+    closeModal('modal-gestione'); openModal('modal-v'); 
+}
+function salvaVersamento() { 
+    const o = ordini.find(x => x.id === idSel); 
+    const q = parseInt(document.getElementById("v_qty").value); 
+    const n = document.getElementById("v_note").value.trim(); 
+    if(!q) return alert("Devi inserire la quantità prodotta!"); 
+    if(!n || n.length < 3) {
+        document.getElementById("v_note").classList.add("required-note");
+        return alert("LA NOTA È OBBLIGATORIA!"); 
+    }
+    if(!o.versamenti) o.versamenti = [];
+    o.versamenti.push({ 
+        qty: q, note: n, timestamp: new Date().toLocaleDateString('it-IT'), 
+        inizio: o.oraInizioSessione, fine: new Date().toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'}), 
+        operatoreSessione: o.operatore, caricato: false 
+    }); 
+    o.fatti += q; o.stato = (o.fatti >= o.qty) ? 'completi' : 'parziale'; 
+    pushData(); closeModal('modal-v'); 
+}
+function toggleDetails(id) { const el = document.getElementById(`details-${id}`); if(el) el.style.display = (el.style.display === 'table-row') ? 'none' : 'table-row'; }
+
+function setFilter(f) { 
+    filtro = f; 
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); 
+    document.querySelector(`[data-f="${f}"]`).classList.add('active'); 
+    document.getElementById('input-ricerca').value = "";
+    render(); 
+}
+
+function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+</script>
+</body>
+</html>
