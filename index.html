@@ -17,6 +17,30 @@
   --urgent-red: #ef4444; --note-bg: #fff7ed; --gold: #fbbf24;
   --success-bg: #dcfce7; 
 }
+
+/* STILI LOGIN */
+#login-screen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: var(--dark); display: flex; justify-content: center; align-items: center;
+    z-index: 9999; color: white;
+}
+.login-card {
+    background: white; padding: 40px; border-radius: 20px;
+    width: 90%; max-width: 380px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+}
+.login-card h2 { color: var(--dark); margin-bottom: 25px; font-weight: 800; }
+.login-input {
+    width: 100%; padding: 15px; border: 2px solid var(--border); border-radius: 10px;
+    font-size: 18px; margin-bottom: 20px; box-sizing: border-box; text-align: center;
+}
+.login-btn {
+    width: 100%; padding: 15px; background: var(--accent); color: white;
+    border: none; border-radius: 10px; font-weight: 800; cursor: pointer; font-size: 16px;
+}
+
+/* NASCONDI APP SE NON LOGGATO */
+#app-interface { display: none; }
+
 body { font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--dark); margin: 0; line-height: 1.5; }
 
 .header { background: var(--dark); padding: 1.2rem 2.5rem; color: white; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--accent); }
@@ -101,77 +125,92 @@ td { padding: 18px 15px; border-bottom: 1px solid var(--border); font-size: 13px
 </head>
 <body>
 
-<header class="header">
-    <div class="logo-container">
-        <div class="logo-box">AF</div>
-        <div>
-            <div class="header-title">ARCHIMEDE FIBRE SRL</div>
-            <div class="header-subtitle">GESTIONE PRODUZIONE CLOUD</div>
-        </div>
+<div id="login-screen">
+    <div class="login-card">
+        <div style="color:var(--dark); font-weight:900; font-size: 2.5rem; margin-bottom:10px; border:3px solid var(--gold); display:inline-block; padding:5px 15px; border-radius:10px;">AF</div>
+        <h2>ACCESSO SISTEMA</h2>
+        <input type="password" id="pass-field" class="login-input" placeholder="Password" onkeypress="if(event.key==='Enter') verifyLogin()">
+        <button class="login-btn" onclick="verifyLogin()">ENTRA</button>
+        <p id="err-text" style="color:red; display:none; margin-top:15px; font-weight:700;">Password Errata!</p>
     </div>
-    <div id="cloud-status" style="font-size: 10px; background: #ef4444; color: white; padding: 8px 18px; border-radius: 20px; font-weight: 900;">
-        <i class="fas fa-sync"></i> CONNETTENDO...
-    </div>
-</header>
+</div>
 
-<nav class="dashboard-nav">
-    <button class="tab-btn active" data-f="dafare" onclick="setFilter('dafare')">🔵 DA FARE</button>
-    <button id="btn-nav-incorso" class="tab-btn" data-f="incorso" onclick="setFilter('incorso')">🟣 IN CORSO</button>
-    <button class="tab-btn" data-f="parziali" onclick="setFilter('parziali')">🔴 PARZIALI</button>
-    <button class="tab-btn" data-f="completi" onclick="setFilter('completi')">🟢 CONCLUSI</button>
-    <button class="tab-btn" data-f="esolver" onclick="setFilter('esolver')">
-        <i class="fas fa-database"></i> ESOLVER <span id="badge-esolver" class="notification-badge" style="display:none;">0</span>
-    </button>
-</nav>
-
-<div class="container">
-    <aside>
-        <div class="card" style="border-top: 4px solid var(--green);">
-            <h3 style="margin:0; font-size:12px; text-transform: uppercase;">Sicurezza Dati</h3>
-            <div class="security-box">
-                <button class="btn-backup" onclick="exportExcelDetailed()"><i class="fas fa-file-excel" style="color:green"></i> EXCEL DETTAGLIATO</button>
-                <button class="btn-backup" onclick="exportJSONManual()"><i class="fas fa-download"></i> BACKUP JSON</button>
-                <label class="btn-backup" style="cursor:pointer">
-                    <i class="fas fa-upload"></i> IMPORTA BACKUP
-                    <input type="file" id="importFile" hidden onchange="importJSONManual(event)">
-                </label>
+<div id="app-interface">
+    <header class="header">
+        <div class="logo-container">
+            <div class="logo-box">AF</div>
+            <div>
+                <div class="header-title">ARCHIMEDE FIBRE SRL</div>
+                <div class="header-subtitle">GESTIONE PRODUZIONE CLOUD</div>
             </div>
         </div>
-
-        <div class="card">
-            <button class="btn" style="background:var(--green); color:white; width:100%; padding: 15px;" onclick="openModal('modal-ana')">
-                <i class="fas fa-boxes"></i> ARCHIVIO PRODOTTI
-            </button>
+        <div id="cloud-status" style="font-size: 10px; background: #ef4444; color: white; padding: 8px 18px; border-radius: 20px; font-weight: 900;">
+            <i class="fas fa-sync"></i> CONNETTENDO...
         </div>
-        <div class="card" style="border-top: 4px solid var(--accent);">
-            <h3 style="margin-top:0; font-size: 14px; text-transform: uppercase;">Nuovo Ordine</h3>
-            <label style="font-size:10px; font-weight:800; color: #64748b; display: block; margin-bottom: 5px;">ARTICOLO</label>
-            <select id="f_prod" class="form-input"></select>
-            <label style="font-size:10px; font-weight:800; color: #64748b; display: block; margin-bottom: 5px;">LAVORAZIONE</label>
-            <select id="f_tipo" class="form-input">
-                <option value="Liquido → Finito">Liquido → Prodotto Finito</option>
-                <option value="Solo Etichettatura">Solo Etichettatura</option>
-            </select>
-            <label style="font-size:10px; font-weight:800; color: #64748b; display: block; margin-bottom: 5px;">QUANTITÀ</label>
-            <input type="number" id="f_qty" class="form-input">
-            <label style="font-size:10px; font-weight:800; color:var(--red); display: block; margin-bottom: 5px;">DATA ALLERT</label>
-            <input type="date" id="f_data" class="form-input" style="border-color:var(--red);">
-            <button class="btn" style="background:var(--accent); color:white; width:100%; padding: 12px;" onclick="aggiungiOrdine()">PIANIFICA ORDINE</button>
-        </div>
-    </aside>
+    </header>
 
-    <main>
-        <div class="card" style="padding:0; overflow:hidden;">
-            <div id="search-bar-completi" class="search-container">
-                <i class="fas fa-search" style="color:var(--accent)"></i>
-                <input type="text" id="input-ricerca" class="search-input" placeholder="Cerca articolo in questa categoria..." onkeyup="filtraCompleti()">
+    <nav class="dashboard-nav">
+        <button class="tab-btn active" data-f="dafare" onclick="setFilter('dafare')">🔵 DA FARE</button>
+        <button id="btn-nav-incorso" class="tab-btn" data-f="incorso" onclick="setFilter('incorso')">🟣 IN CORSO</button>
+        <button class="tab-btn" data-f="parziali" onclick="setFilter('parziali')">🔴 PARZIALI</button>
+        <button class="tab-btn" data-f="completi" onclick="setFilter('completi')">🟢 CONCLUSI</button>
+        <button class="tab-btn" data-f="esolver" onclick="setFilter('esolver')">
+            <i class="fas fa-database"></i> ESOLVER <span id="badge-esolver" class="notification-badge" style="display:none;">0</span>
+        </button>
+    </nav>
+
+    <div class="container">
+        <aside>
+            <div class="card" style="border-top: 4px solid var(--green);">
+                <h3 style="margin:0; font-size:12px; text-transform: uppercase;">Sicurezza Dati</h3>
+                <div class="security-box">
+                    <button class="btn-backup" onclick="exportExcelDetailed()"><i class="fas fa-file-excel" style="color:green"></i> EXCEL DETTAGLIATO</button>
+                    <button class="btn-backup" onclick="exportJSONManual()"><i class="fas fa-download"></i> BACKUP JSON</button>
+                    <label class="btn-backup" style="cursor:pointer">
+                        <i class="fas fa-upload"></i> IMPORTA BACKUP
+                        <input type="file" id="importFile" hidden onchange="importJSONManual(event)">
+                    </label>
+                    <button class="btn-backup" onclick="logout()" style="background:var(--dark); color:white; border-color:var(--dark); margin-top:10px;">
+                        <i class="fas fa-sign-out-alt"></i> ESCI (BLOCCA)
+                    </button>
+                </div>
             </div>
-            <table>
-                <thead><tr id="table-head"></tr></thead>
-                <tbody id="table-body"></tbody>
-            </table>
-        </div>
-    </main>
+
+            <div class="card">
+                <button class="btn" style="background:var(--green); color:white; width:100%; padding: 15px;" onclick="openModal('modal-ana')">
+                    <i class="fas fa-boxes"></i> ARCHIVIO PRODOTTI
+                </button>
+            </div>
+            <div class="card" style="border-top: 4px solid var(--accent);">
+                <h3 style="margin-top:0; font-size: 14px; text-transform: uppercase;">Nuovo Ordine</h3>
+                <label style="font-size:10px; font-weight:800; color: #64748b; display: block; margin-bottom: 5px;">ARTICOLO</label>
+                <select id="f_prod" class="form-input"></select>
+                <label style="font-size:10px; font-weight:800; color: #64748b; display: block; margin-bottom: 5px;">LAVORAZIONE</label>
+                <select id="f_tipo" class="form-input">
+                    <option value="Liquido → Finito">Liquido → Prodotto Finito</option>
+                    <option value="Solo Etichettatura">Solo Etichettatura</option>
+                </select>
+                <label style="font-size:10px; font-weight:800; color: #64748b; display: block; margin-bottom: 5px;">QUANTITÀ</label>
+                <input type="number" id="f_qty" class="form-input">
+                <label style="font-size:10px; font-weight:800; color:var(--red); display: block; margin-bottom: 5px;">DATA ALLERT</label>
+                <input type="date" id="f_data" class="form-input" style="border-color:var(--red);">
+                <button class="btn" style="background:var(--accent); color:white; width:100%; padding: 12px;" onclick="aggiungiOrdine()">PIANIFICA ORDINE</button>
+            </div>
+        </aside>
+
+        <main>
+            <div class="card" style="padding:0; overflow:hidden;">
+                <div id="search-bar-completi" class="search-container">
+                    <i class="fas fa-search" style="color:var(--accent)"></i>
+                    <input type="text" id="input-ricerca" class="search-input" placeholder="Cerca articolo in questa categoria..." onkeyup="filtraCompleti()">
+                </div>
+                <table>
+                    <thead><tr id="table-head"></tr></thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+        </main>
+    </div>
 </div>
 
 <div id="modal-gestione" class="modal-bg">
@@ -210,6 +249,29 @@ td { padding: 18px 15px; border-bottom: 1px solid var(--border); font-size: 13px
 </div>
 
 <script>
+/* LOGICA LOGIN */
+const PSW = "Archimede1!";
+
+function verifyLogin() {
+    const val = document.getElementById("pass-field").value;
+    if(val === PSW) {
+        document.getElementById("login-screen").style.display = "none";
+        document.getElementById("app-interface").style.display = "block";
+        sessionStorage.setItem("af_access", "granted");
+    } else {
+        document.getElementById("err-text").style.display = "block";
+    }
+}
+
+// Auto-login se già autenticato nella sessione
+if(sessionStorage.getItem("af_access") === "granted") {
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("app-interface").style.display = "block";
+}
+
+function logout() { sessionStorage.removeItem("af_access"); location.reload(); }
+
+/* FIREBASE CONFIG */
 const firebaseConfig = {
   apiKey: "AIzaSyBPmAHAVaeD1W2tvRC2jEc6HLD_v6kUkvU",
   authDomain: "archimede-fibre-srl-produzione.firebaseapp.com",
@@ -421,31 +483,19 @@ function editQty(id) {
     if(n !== null && !isNaN(n) && n > 0) {
         o.qty = parseInt(n);
         pushData();
-    } else if (n !== null) {
-        alert("Inserire un numero valido superiore a zero.");
     }
 }
 
-/* --- LOGICA ELIMINAZIONE AGGIORNATA --- */
-
 function azioneEliminaGenerale(id) {
     const o = ordini.find(x => x.id === id);
-    
-    // CASO 1: SE L'ORDINE È NEI "DA FARE", LO ELIMINO DEFINITIVAMENTE
     if (o.stato === 'dafare') {
         if(confirm("L'ordine non è ancora iniziato. Vuoi ELIMINARLO DEFINITIVAMENTE dal sistema?")) {
             ordini = ordini.filter(x => x.id !== id);
             pushData();
         }
-    } 
-    // CASO 2: SE L'ORDINE È GIÀ INIZIATO (PARZIALE O CONCLUSO), LO RESETTO
-    else {
+    } else {
         if(confirm("Attenzione: l'ordine verrà azzerato e riportato in stato 'DA FARE'. Procedere?")) { 
-            o.fatti = 0;
-            o.stato = 'dafare';
-            o.versamenti = [];
-            o.operatore = '';
-            o.oraInizioSessione = '';
+            o.fatti = 0; o.stato = 'dafare'; o.versamenti = []; o.operatore = ''; o.oraInizioSessione = '';
             pushData(); 
         } 
     }
