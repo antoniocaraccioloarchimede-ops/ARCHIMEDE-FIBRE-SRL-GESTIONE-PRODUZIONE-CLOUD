@@ -249,7 +249,7 @@ td { padding: 18px 15px; border-bottom: 1px solid var(--border); font-size: 13px
 </div>
 
 <script>
-/* LOGICA LOGIN */
+/* LOGICA LOGIN - AGGIORNATA PER RICHIEDERE SEMPRE PSW */
 const PSW = "Archimede1!";
 
 function verifyLogin() {
@@ -257,19 +257,12 @@ function verifyLogin() {
     if(val === PSW) {
         document.getElementById("login-screen").style.display = "none";
         document.getElementById("app-interface").style.display = "block";
-        sessionStorage.setItem("af_access", "granted");
     } else {
         document.getElementById("err-text").style.display = "block";
     }
 }
 
-// Auto-login se già autenticato nella sessione
-if(sessionStorage.getItem("af_access") === "granted") {
-    document.getElementById("login-screen").style.display = "none";
-    document.getElementById("app-interface").style.display = "block";
-}
-
-function logout() { sessionStorage.removeItem("af_access"); location.reload(); }
+function logout() { location.reload(); }
 
 /* FIREBASE CONFIG */
 const firebaseConfig = {
