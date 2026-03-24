@@ -1111,6 +1111,17 @@ tr:hover td { background: #f8fafc; }
 
 <script>
 const PSW = "Archimede1!";
+const PSW_ADMIN = "Archimede12345678!";
+
+function verifyAdminPassword(azione) {
+  const input = prompt("⚠️ OPERAZIONE PROTETTA\n\nInserisci password amministratore:");
+  if(input === PSW_ADMIN) {
+    return true;
+  } else {
+    alert("❌ PASSWORD ERRATA!\nOperazione annullata.");
+    return false;
+  }
+}
 
 function verifyLogin() {
   const val = document.getElementById("pass-field").value;
@@ -1672,11 +1683,22 @@ function editQty(id) {
 function azioneEliminaGenerale(id) {
   const o = ordini.find(x => x.id === id);
   if (o.stato === 'dafare') {
+    // Ordine non iniziato: eliminazione libera
     if(confirm("L'ORDINE NON È ANCORA INIZIATO. VUOI ELIMINARLO DEFINITIVAMENTE DAL SISTEMA?")) {
       ordini = ordini.filter(x => x.id !== id);
       pushData();
     }
+  } else if (o.fatti >= o.qty) {
+    // Ordine COMPLETO: richiede password amministratore
+    if(verifyAdminPassword("elimina ordine concluso")) {
+      if(confirm("⚠️ CONFERMA FINALE: Eliminare definitivamente l'ordine concluso?")) {
+        ordini = ordini.filter(x => x.id !== id);
+        pushData();
+        alert("✅ Ordine concluso eliminato con autorizzazione amministratore.");
+      }
+    }
   } else {
+    // Ordine In Corso o Parziale: azzeramento libero (operazione di produzione)
     if(confirm("ATTENZIONE: L'ORDINE VERRÀ AZZERATO E RIPORTATO IN STATO 'DA FARE'. PROCEDERE?")) { 
       o.fatti = 0; o.stato = 'dafare'; o.versamenti = []; o.operatore = ''; o.oraInizioSessione = '';
       pushData(); 
@@ -1685,10 +1707,13 @@ function azioneEliminaGenerale(id) {
 }
 
 function eliminaSingoloVersamento(ordineId, versamentoIdx) {
-  if(confirm("ELIMINARE QUESTA RIGA DI CARICO DA ESOLVER?")) {
-    const o = ordini.find(x => x.id === ordineId);
-    o.versamenti.splice(versamentoIdx, 1);
-    pushData();
+  if(verifyAdminPassword("elimina riga Esolver")) {
+    if(confirm("⚠️ CONFERMA FINALE: Eliminare questa riga di carico da Esolver?")) {
+      const o = ordini.find(x => x.id === ordineId);
+      o.versamenti.splice(versamentoIdx, 1);
+      pushData();
+      alert("✅ Riga Esolver eliminata con autorizzazione amministratore.");
+    }
   }
 }
 
