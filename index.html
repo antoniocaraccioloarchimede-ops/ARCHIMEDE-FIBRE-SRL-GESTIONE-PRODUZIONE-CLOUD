@@ -1617,67 +1617,89 @@ function renderMain(tbody, oggi) {
 }
 
 function renderEsolver(tbody) {
+  // Creo array di tutti i versamenti con info ordine e indice, ordinati per data/ora decrescente
+  let tuttiVersamenti = [];
   ordini.forEach(o => {
     if(o.versamenti) {
       o.versamenti.forEach((v, idx) => {
-        const vId = `es-${o.id}-${idx}`;
-        const isCaricato = v.caricato;
-        
-        // Riga principale con classe per identificazione
-        tbody.innerHTML += `
-        <tr class="esolver-row" style="background:${isCaricato ? 'rgba(22,163,74,0.05)' : 'rgba(202,138,4,0.05)'};">
-          <td>
-            <span class="badge-stato ${isCaricato ? 'bg-caricato' : 'bg-dafare'}">
-              ${isCaricato ? '<i class="fas fa-check-double"></i> CARICATO SU ESOLVER' : '<i class="fas fa-upload"></i> DA CARICARE SU ESOLVER'}
-            </span>
-          </td>
-          <td>
-           <div style="font-size:0.7rem; color:var(--gray); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;"><i class="fas fa-building"></i> ${o.azienda || 'ARCHIMEDE FIBRE'}</div><strong style="text-transform:uppercase; letter-spacing:1px; color:var(--text);">${o.art}</strong>
-            <br>
-            <button class="btn-detail" onclick="toggleDetails('${vId}')">
-              <i class="fas fa-comment"></i> LEGGI NOTA
-            </button>
-          </td>
-          <td>
-            <div style="font-size:1.3rem; font-weight:800; color:var(--text);">${v.qty}</div>
-          </td>
-          <td>
-            <div style="display:flex; gap:12px;">
-              ${!isCaricato ? `
-                <button class="btn btn-success" style="font-size:0.8rem;" onclick="caricaEs(${o.id},${idx})">
-                  <i class="fas fa-upload"></i> CARICA SU ESOLVER
-                </button>
-              ` : `
-                <div style="font-size:2.5rem; color:var(--success);"><i class="fas fa-check-circle"></i></div>
-              `}
-              <button class="btn-del-row" onclick="eliminaSingoloVersamento(${o.id}, ${idx})">
-                <i class="fas fa-times"></i>
-              </button>
-            </div>
-          </td>
-        </tr>
-        <tr id="details-${vId}" class="details-row">
-          <td colspan="4">
-            <div class="phase-box" style="border-left:4px solid var(--warning);">
-              <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;">
-                <span style="font-weight:800; color:var(--text); font-size:1.1rem; text-transform:uppercase;">
-                  <i class="fas fa-user"></i> ${v.operatoreSessione}
-                </span>
-                <span style="font-size:0.85rem; color:var(--text-light); background:var(--white); padding:8px 15px; text-transform:uppercase; letter-spacing:1px; border:1px solid var(--border);">
-                  <i class="fas fa-calendar"></i> ${v.timestamp} <i class="fas fa-clock"></i> ${v.fine}
-                </span>
-              </div>
-              <div style="font-size:1rem; font-weight:600; color:var(--text); line-height:1.6; background:var(--white); padding:20px; border:1px solid var(--border); text-transform:uppercase;">
-                <i class="fas fa-comment-alt"></i> NOTA: "${v.note}"
-              </div>
-            </div>
-          </td>
-        </tr>`;
+        tuttiVersamenti.push({
+          ordine: o,
+          versamento: v,
+          idx: idx
+        });
       });
     }
   });
+  
+  // Ordino per data e ora decrescente (più recente prima)
+  tuttiVersamenti.sort((a, b) => {
+    const dataA = a.versamento.timestamp.split('/').reverse().join('-');
+    const dataB = b.versamento.timestamp.split('/').reverse().join('-');
+    const oraA = a.versamento.fine || '00:00';
+    const oraB = b.versamento.fine || '00:00';
+    const datetimeA = new Date(dataA + 'T' + oraA + ':00');
+    const datetimeB = new Date(dataB + 'T' + oraB + ':00');
+    return datetimeB - datetimeA;
+  });
+  
+  tuttiVersamenti.forEach(item => {
+    const o = item.ordine;
+    const v = item.versamento;
+    const idx = item.idx;
+    const vId = `es-${o.id}-${idx}`;
+    const isCaricato = v.caricato;
+    
+    tbody.innerHTML += `
+    <tr class="esolver-row" style="background:${isCaricato ? 'rgba(22,163,74,0.05)' : 'rgba(202,138,4,0.05)'};">
+      <td>
+        <span class="badge-stato ${isCaricato ? 'bg-caricato' : 'bg-dafare'}">
+          ${isCaricato ? '<i class="fas fa-check-double"></i> CARICATO SU ESOLVER' : '<i class="fas fa-upload"></i> DA CARICARE SU ESOLVER'}
+        </span>
+      </td>
+      <td>
+       <div style="font-size:0.7rem; color:var(--gray); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;"><i class="fas fa-building"></i> ${o.azienda || 'ARCHIMEDE FIBRE'}</div><strong style="text-transform:uppercase; letter-spacing:1px; color:var(--text);">${o.art}</strong>
+        <br>
+        <button class="btn-detail" onclick="toggleDetails('${vId}')">
+          <i class="fas fa-comment"></i> LEGGI NOTA
+        </button>
+      </td>
+      <td>
+        <div style="font-size:1.3rem; font-weight:800; color:var(--text);">${v.qty}</div>
+      </td>
+      <td>
+        <div style="display:flex; gap:12px;">
+          ${!isCaricato ? `
+            <button class="btn btn-success" style="font-size:0.8rem;" onclick="caricaEs(${o.id},${idx})">
+              <i class="fas fa-upload"></i> CARICA SU ESOLVER
+            </button>
+          ` : `
+            <div style="font-size:2.5rem; color:var(--success);"><i class="fas fa-check-circle"></i></div>
+          `}
+          <button class="btn-del-row" onclick="eliminaSingoloVersamento(${o.id}, ${idx})">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </td>
+    </tr>
+    <tr id="details-${vId}" class="details-row">
+      <td colspan="4">
+        <div class="phase-box" style="border-left:4px solid var(--warning);">
+          <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;">
+            <span style="font-weight:800; color:var(--text); font-size:1.1rem; text-transform:uppercase;">
+              <i class="fas fa-user"></i> ${v.operatoreSessione}
+            </span>
+            <span style="font-size:0.85rem; color:var(--text-light); background:var(--white); padding:8px 15px; text-transform:uppercase; letter-spacing:1px; border:1px solid var(--border);">
+              <i class="fas fa-calendar"></i> ${v.timestamp} <i class="fas fa-clock"></i> ${v.fine}
+            </span>
+          </div>
+          <div style="font-size:1rem; font-weight:600; color:var(--text); line-height:1.6; background:var(--white); padding:20px; border:1px solid var(--border); text-transform:uppercase;">
+            <i class="fas fa-comment-alt"></i> NOTA: "${v.note}"
+          </div>
+        </div>
+      </td>
+    </tr>`;
+  });
 }
-
 function editQty(id) {
   const o = ordini.find(x => x.id === id);
   const n = prompt("INSERISCI LA NUOVA QUANTITÀ ORDINATA:", o.qty);
